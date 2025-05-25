@@ -97,21 +97,6 @@ if img is not None:
     mn, mx = float(img.min()), float(img.max())
     default_ww, default_wc = mx - mn, mn + (mx - mn) / 2
 
-    sync = st.sidebar.checkbox('Sincronizar cortes', value=True)
-    if sync:
-        corte = st.sidebar.radio('Corte (sincronizado)', ('Axial', 'Coronal', 'Sagital'))
-        lims = {'Axial': n_ax - 1, 'Coronal': n_cor - 1, 'Sagital': n_sag - 1}
-        mids = {'Axial': n_ax // 2, 'Coronal': n_cor // 2, 'Sagital': n_sag // 2}
-        idx_slider = st.sidebar.slider('Índice', 0, lims[corte], mids[corte])
-        slice_idx = idx_slider
-    else:
-        corte = st.sidebar.radio('Selecciona el tipo de corte', ('Axial', 'Coronal', 'Sagital'))
-        if corte == 'Axial':
-            slice_idx = st.sidebar.slider('Índice Axial', 0, n_ax - 1, n_ax // 2)
-        elif corte == 'Coronal':
-            slice_idx = st.sidebar.slider('Índice Coronal', 0, n_cor - 1, n_cor // 2)
-        else:
-            slice_idx = st.sidebar.slider('Índice Sagital', 0, n_sag - 1, n_sag // 2)
 
     # Opciones de imagen
     show_3d = st.sidebar.checkbox('Mostrar visualización 3D', value=True)
