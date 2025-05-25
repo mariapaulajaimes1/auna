@@ -25,6 +25,17 @@ st.markdown("""
     .sub-header { color: #c0d711; font-size: 24px; margin-bottom: 15px; font-weight: bold; }
     .stButton>button { background-color: #28aec5; color: white; border: none; border-radius: 4px; padding: 8px 16px; }
     .stButton>button:hover { background-color: #1c94aa; }
+
+     /* Oculta los círculos de los radio buttons */
+    div[role="radiogroup"] > div > label > div:first-child {
+        display: none !important;
+    }
+
+    /* Opcional: mejora el padding y apariencia */
+    div[role="radiogroup"] > div > label {
+        padding-left: 0.5rem !important;
+        font-weight: 500;
+    }
 </style>
 """, unsafe_allow_html=True)
 
