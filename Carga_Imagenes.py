@@ -13,7 +13,7 @@ import plotly.graph_objects as go
 
 st.set_page_config(layout="wide", page_title="BrachyCervix")
 
-# Logo
+# Logo en esquina superior izquierda
 col1, col2 = st.columns([5, 15])
 with col1:
     st.image("Banner.png", width=500)
@@ -25,24 +25,13 @@ st.markdown("""
     .sub-header { color: #c0d711; font-size: 24px; margin-bottom: 15px; font-weight: bold; }
     .stButton>button { background-color: #28aec5; color: white; border: none; border-radius: 4px; padding: 8px 16px; }
     .stButton>button:hover { background-color: #1c94aa; }
-
-     /* Oculta los círculos de los radio buttons */
-    div[role="radiogroup"] > div > label > div:first-child {
-        display: none !important;
-    }
-
-    /* Opcional: mejora el padding y apariencia */
-    div[role="radiogroup"] > div > label {
-        padding-left: 0.5rem !important;
-        font-weight: 500;
-    }
 </style>
 """, unsafe_allow_html=True)
 
 st.sidebar.markdown('<p class="sub-header">Visualizador de imágenes DICOM</p>', unsafe_allow_html=True)
 uploaded_file = st.sidebar.file_uploader("Sube un archivo ZIP con tus archivos DICOM", type="zip")
 
-# Funciones
+# Funciones internas
 def find_dicom_series(directory):
     series = []
     for root, _, files in os.walk(directory):
@@ -58,10 +47,10 @@ def find_dicom_series(directory):
 
 def apply_window_level(image, ww, wc):
     img_f = image.astype(float)
-    mn = wc - ww / 2.0
-    mx = wc + ww / 2.0
+    mn = wc - ww/2.0
+    mx = wc + ww/2.0
     win = np.clip(img_f, mn, mx)
-    return (win - mn) / (mx - mn) if mx != mn else np.zeros_like(img_f)
+    return (win - mn) / (mx - mn) if mx!=mn else np.zeros_like(img_f)
 
 # Extraer ZIP
 dirname = None
@@ -72,14 +61,14 @@ if uploaded_file:
     dirname = temp_dir
     st.sidebar.success("Archivos extraídos correctamente.")
 
-# Cargar serie
+# Buscar y cargar serie
 img = None
 original = None
 if dirname:
     with st.spinner('Buscando series DICOM...'):
         series = find_dicom_series(dirname)
     if series:
-        opts = [f"Serie {i+1}: {s[0][:10]}... ({len(s[2])} ficheros)" for i, s in enumerate(series)]
+        opts = [f"Serie {i+1}: {s[0][:10]}... ({len(s[2])} ficheros)" for i,s in enumerate(series)]
         sel = st.sidebar.selectbox("Seleccionar serie DICOM:", opts)
         idx = opts.index(sel)
         _, _, files = series[idx]
@@ -91,47 +80,45 @@ if dirname:
     else:
         st.sidebar.error("No se encontraron DICOM válidos en el ZIP cargado.")
 
-# Visualización
+# Si hay imagen cargada
 if img is not None:
     n_ax, n_cor, n_sag = img.shape
     mn, mx = float(img.min()), float(img.max())
-    default_ww, default_wc = mx - mn, mn + (mx - mn) / 2
+    default_ww, default_wc = mx-mn, mn + (mx-mn)/2
 
+    # Configuración fija sin controles
+    idx_axial = n_ax // 2
+    idx_coronal = n_cor // 2
+    idx_sagital = n_sag // 2
+    invert = False
+    window_type = 'Default'
+    if window_type=='Default': ww,wc = default_ww, default_wc
+    elif window_type=='Abdomen': ww,wc = 400,40
+    elif window_type=='Hueso': ww,wc = 2000,500
+    elif window_type=='Pulmón': ww,wc = 1500,-600
+    else: ww,wc = default_ww, default_wc
 
-    # Opciones de imagen
-    show_3d = st.sidebar.checkbox('Mostrar visualización 3D', value=True)
-    invert = st.sidebar.checkbox('Invertir colores (Negativo)', value=False)
-    window_type = st.sidebar.selectbox('Tipo de ventana', ('Default', 'Abdomen', 'Hueso', 'Pulmón'))
-    if window_type == 'Default':
-        ww, wc = default_ww, default_wc
-    elif window_type == 'Abdomen':
-        ww, wc = 400, 40
-    elif window_type == 'Hueso':
-        ww, wc = 2000, 500
-    elif window_type == 'Pulmón':
-        ww, wc = 1500, -600
-    else:
-        ww, wc = default_ww, default_wc
-
-    axial = img[slice_idx, :, :] if corte == 'Axial' else img[n_ax // 2, :, :]
-    coronal = img[:, slice_idx, :] if corte == 'Coronal' else img[:, n_cor // 2, :]
-    sagital = img[:, :, slice_idx] if corte == 'Sagital' else img[:, :, n_sag // 2]
-    cortes = [('Axial', axial), ('Coronal', coronal), ('Sagital', sagital)]
+    # Mostrar cortes
+    axial = img[idx_axial,:,:]
+    coronal = img[:,idx_coronal,:]
+    sagital = img[:,:,idx_sagital]
+    cortes = [('Axial',axial), ('Coronal',coronal), ('Sagital',sagital)]
 
     cols = st.columns(3)
-    for col, (name, mat) in zip(cols, cortes):
+    for col,(name,mat) in zip(cols,cortes):
         with col:
             st.markdown(f"{name}")
-            fig, ax = plt.subplots()
+            fig,ax = plt.subplots()
             ax.axis('off')
             norm = apply_window_level(mat, ww, wc)
-            if invert:
-                norm = 1 - norm
+            if invert: norm = 1 - norm
             ax.imshow(norm, cmap='gray', origin='lower')
             st.pyplot(fig)
 
-    # 3D
+    # Visualización 3D
+    show_3d = True
     if show_3d:
+        from skimage.measure import marching_cubes
         resized = resize(original, (64, 64, 64), anti_aliasing=True)
 
         if 'points' not in st.session_state:
@@ -150,10 +137,7 @@ if img is not None:
             st.selectbox("Seleccionar primer punto", options=list(range(len(st.session_state['points']))), key='p1')
             st.selectbox("Seleccionar segundo punto", options=list(range(len(st.session_state['points']))), key='p2')
             if st.button("Agregar línea"):
-                st.session_state['lines'].append((
-                    st.session_state['points'][st.session_state['p1']],
-                    st.session_state['points'][st.session_state['p2']]
-                ))
+                st.session_state['lines'].append((st.session_state['points'][st.session_state['p1']], st.session_state['points'][st.session_state['p2']]))
 
         xg, yg, zg = np.mgrid[0:64, 0:64, 0:64]
         fig3d = go.Figure(data=[go.Volume(
@@ -163,29 +147,20 @@ if img is not None:
         ])
 
         for pt in st.session_state['points']:
-            fig3d.add_trace(go.Scatter3d(
-                x=[pt[0]], y=[pt[1]], z=[pt[2]],
-                mode='markers',
-                marker=dict(size=5, color='red')
-            ))
+            fig3d.add_trace(go.Scatter3d(x=[pt[0]], y=[pt[1]], z=[pt[2]], mode='markers', marker=dict(size=5, color='red')))
         for a, b in st.session_state['lines']:
-            fig3d.add_trace(go.Scatter3d(
-                x=[a[0], b[0]], y=[a[1], b[1]], z=[a[2], b[2]],
-                mode='lines',
-                line=dict(color='blue')
-            ))
+            fig3d.add_trace(go.Scatter3d(x=[a[0], b[0]], y=[a[1], b[1]], z=[a[2], b[2]], mode='lines', line=dict(color='blue')))
 
         fig3d.update_layout(margin=dict(l=0, r=0, b=0, t=0))
         st.subheader('Vista 3D')
         st.plotly_chart(fig3d, use_container_width=True)
 
-# Footer
+# Pie de página
 st.markdown('<p class="giant-title">BrachyCervix</p>', unsafe_allow_html=True)
 st.markdown("""
 <hr>
 <div style="text-align:center;color:#28aec5;font-size:50px;">
-    BrachyCervix -
-    Semiautomátización y visor para procesos de braquiterapia enfocados en el Cervix
+    BrachyCervix - Semiautomátización y visor para procesos de braquiterapia enfocados en el Cervix
 </div>
 <div style="text-align:center;color:#28aec5;font-size:20px;">
     Proyecto asignatura medialab 3
