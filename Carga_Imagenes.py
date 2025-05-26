@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import pyvista as pv
 from pyvista import themes
 from stpyvista import stpyvista
+from pyvista.plotting import themes
 
 st.set_page_config(layout="wide")
 st.title("Visualizador DICOM 2D/3D con Anotaciones")
@@ -122,7 +123,8 @@ if files:
     # Render 3D
     st.subheader("Visualización 3D")
     volume = plot_3d_volume(img)
-    p = pv.Plotter(theme=plot_theme, off_screen=True)  # off_screen True para evitar errores en servidor
+    p = pv.Plotter(theme=plot_theme, notebook=False, off_screen=True)
+    # off_screen True para evitar errores en servidor
     p.add_volume(volume, cmap="gray", opacity="sigmoid")
 
     # Añadir anotaciones
