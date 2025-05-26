@@ -10,3 +10,5 @@ cadquery
 OCP
 plotly
 nibabel
+pyvista[all]
+stpyvista
