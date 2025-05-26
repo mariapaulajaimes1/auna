@@ -59,7 +59,7 @@ if files:
         file_paths.append(path)
     
     img, meta = load_dicom_series(file_paths)
-    st.sidebar.markdown(f"**Dimensiones del volumen:** {img.shape}")
+    st.sidebar.markdown(f"*Dimensiones del volumen:* {img.shape}")
 
     # Mostrar imágenes 2D con coordenadas clickeadas
     if img is not None:
@@ -166,4 +166,3 @@ if files:
     # Pie de página
     st.markdown("---")
     st.caption("App desarrollada para visualización y anotación de imágenes médicas DICOM.")
-    
