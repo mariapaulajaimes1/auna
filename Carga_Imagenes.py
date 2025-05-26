@@ -71,7 +71,7 @@ if uploaded_file is not None:
         fig.add_trace(go.Scatter3d(x=x, y=y, z=z, mode='lines+markers'))
 
     fig.update_layout(scene=dict(xaxis_title='X', yaxis_title='Y', zaxis_title='Z'), width=800, height=600)
-  st.plotly_chart(fig)
+    st.plotly_chart(fig)
 
 st.markdown("---")
 
@@ -109,4 +109,6 @@ if st.button("Limpiar todo"):
     st.session_state['lines'] = []
 
 os.remove(tmp_filepath)
+
+
 
