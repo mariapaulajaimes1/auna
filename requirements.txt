@@ -9,3 +9,4 @@ scikit-image
 cadquery
 OCP
 plotly
+nibabel
