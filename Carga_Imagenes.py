@@ -5,17 +5,12 @@ import pydicom
 import numpy as np
 import matplotlib.pyplot as plt
 import pyvista as pv
-from pyvista import themes
 from stpyvista import stpyvista
 
 st.set_page_config(layout="wide")
 st.title("Visualizador DICOM 2D/3D con Anotaciones")
 
-# Configurar el tema de PyVista
-plot_theme = themes.DefaultTheme()
-plot_theme.background = 'white'
-plot_theme.color = 'black'
-plot_theme.font.family = 'arial'
+
 
 # Funciones
 
@@ -123,8 +118,10 @@ if files:
     volume = plot_3d_volume(img)
 
     # Configurar plotter de PyVista para entorno sin GUI
-    p = pv.Plotter(theme=plot_theme, notebook=False, off_screen=True)
+    p = pv.Plotter(theme=plot_theme, off_screen=True)
+    p.set_background("white")
     p.add_volume(volume, cmap="gray", opacity="sigmoid")
+
 
     # Añadir anotaciones
     st.sidebar.subheader("Anotaciones 3D")
