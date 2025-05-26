@@ -59,7 +59,6 @@ if uploaded_file is not None:
         st.image(data[sagittal_index, :, :], caption=f"Corte Sagital - Índice {sagittal_index}", use_column_width=True)
 
     st.markdown("---")
-
     st.subheader("Visualización 3D de Agujas")
 
     fig = go.Figure()
@@ -73,42 +72,38 @@ if uploaded_file is not None:
     fig.update_layout(scene=dict(xaxis_title='X', yaxis_title='Y', zaxis_title='Z'), width=800, height=600)
     st.plotly_chart(fig)
 
-st.markdown("---")
+    st.markdown("---")
+    st.subheader("Gestión de Agujas")
 
-st.subheader("Gestión de Agujas")
+    if len(st.session_state['points']) >= 2:
+        st.selectbox("Seleccionar primer punto", st.session_state['points'], key='start_point')
+        st.selectbox("Seleccionar segundo punto", st.session_state['points'], key='end_point')
 
-if len(st.session_state['points']) >= 2:
-    st.selectbox("Seleccionar primer punto", st.session_state['points'], key='start_point')
-    st.selectbox("Seleccionar segundo punto", st.session_state['points'], key='end_point')
+        if st.button("Agregar línea"):
+            st.session_state['lines'].append((st.session_state['start_point'], st.session_state['end_point']))
 
-    if st.button("Agregar línea"):
-        st.session_state['lines'].append((st.session_state['start_point'], st.session_state['end_point']))
+    colx1, colx2 = st.columns(2)
 
-colx1, colx2 = st.columns(2)
+    with colx1:
+        x = st.number_input("X", min_value=0, max_value=data.shape[0] - 1, value=midpoint[0])
+        y = st.number_input("Y", min_value=0, max_value=data.shape[1] - 1, value=midpoint[1])
+        z = st.number_input("Z", min_value=0, max_value=data.shape[2] - 1, value=midpoint[2])
+        if st.button("Agregar punto"):
+            st.session_state['points'].append((x, y, z))
 
-with colx1:
-    x = st.number_input("X", min_value=0, max_value=data.shape[0] - 1, value=midpoint[0])
-    y = st.number_input("Y", min_value=0, max_value=data.shape[1] - 1, value=midpoint[1])
-    z = st.number_input("Z", min_value=0, max_value=data.shape[2] - 1, value=midpoint[2])
-    if st.button("Agregar punto"):
-        st.session_state['points'].append((x, y, z))
+    with colx2:
+        if st.button("Generar agujas aleatorias"):
+            for _ in range(3):
+                z1 = random.randint(29, 36)
+                z2 = random.randint(29, 36)
+                punto_a = (32, 32, z1)
+                punto_b = (39, 32, z2)
+                st.session_state['points'].extend([punto_a, punto_b])
+                st.session_state['lines'].append((punto_a, punto_b))
+            st.success("Agujas generadas correctamente")
 
-with colx2:
-    if st.button("Generar agujas aleatorias"):
-        for _ in range(3):  # Genera 3 agujas aleatorias con coordenadas predeterminadas
-            z1 = random.randint(29, 36)
-            z2 = random.randint(29, 36)
-            punto_a = (32, 32, z1)
-            punto_b = (39, 32, z2)
-            st.session_state['points'].extend([punto_a, punto_b])
-            st.session_state['lines'].append((punto_a, punto_b))
-        st.success("Agujas generadas correctamente")
+    if st.button("Limpiar todo"):
+        st.session_state['points'] = []
+        st.session_state['lines'] = []
 
-if st.button("Limpiar todo"):
-    st.session_state['points'] = []
-    st.session_state['lines'] = []
-
-os.remove(tmp_filepath)
-
-
-
+    os.remove(tmp_filepath)
