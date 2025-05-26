@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import pyvista as pv
 from pyvista import themes
 from stpyvista import stpyvista
-from pyvista.plotting import themes
 
 st.set_page_config(layout="wide")
 st.title("Visualizador DICOM 2D/3D con Anotaciones")
@@ -41,8 +40,7 @@ def plot_3d_volume(img3d):
     return volume
 
 def draw_line(p1, p2):
-    line = pv.Line(p1, p2)
-    return line
+    return pv.Line(p1, p2)
 
 def draw_spline(points):
     return pv.Spline(points, 1000)
@@ -123,8 +121,9 @@ if files:
     # Render 3D
     st.subheader("Visualización 3D")
     volume = plot_3d_volume(img)
+
+    # Configurar plotter de PyVista para entorno sin GUI
     p = pv.Plotter(theme=plot_theme, notebook=False, off_screen=True)
-    # off_screen True para evitar errores en servidor
     p.add_volume(volume, cmap="gray", opacity="sigmoid")
 
     # Añadir anotaciones
@@ -138,6 +137,7 @@ if files:
         x = st.sidebar.number_input("X", min_value=0, max_value=img.shape[2]-1, value=img.shape[2]//2)
         y = st.sidebar.number_input("Y", min_value=0, max_value=img.shape[1]-1, value=img.shape[1]//2)
         z = st.sidebar.number_input("Z", min_value=0, max_value=img.shape[0]-1, value=img.shape[0]//2)
+
         if st.sidebar.button("Agregar punto"):
             point = (float(x), float(y), float(z))
             if point not in st.session_state.annotations:
@@ -170,4 +170,3 @@ if files:
     # Pie de página
     st.markdown("---")
     st.caption("App desarrollada para visualización y anotación de imágenes médicas DICOM.")
-
