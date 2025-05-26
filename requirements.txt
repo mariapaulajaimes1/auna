@@ -9,7 +9,3 @@ scikit-image
 cadquery
 OCP
 plotly
-nibabel
-pyvista==0.34.2
-vtk==9.1.0
-stpyvista
