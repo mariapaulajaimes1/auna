@@ -122,10 +122,10 @@ if files:
     # Render 3D
     st.subheader("Visualización 3D")
     volume = plot_3d_volume(img)
-    p = pv.Plotter(theme=plot_theme, notebook=False, off_screen=True)
+    p = pv.Plotter(theme=plot_theme, off_screen=True)  # off_screen True para evitar errores en servidor
     p.add_volume(volume, cmap="gray", opacity="sigmoid")
 
-       # Añadir anotaciones
+    # Añadir anotaciones
     st.sidebar.subheader("Anotaciones 3D")
     annotation_mode = st.sidebar.selectbox("Tipo de anotación", ["Ninguna", "Punto", "Línea recta", "Línea curva"])
 
@@ -162,7 +162,10 @@ if files:
             except Exception as e:
                 st.warning(f"Error al dibujar línea curva: {e}")
 
+    # Mostrar la renderización 3D dentro de Streamlit con stpyvista
+    stpyvista(p, key="plotter")
 
     # Pie de página
     st.markdown("---")
     st.caption("App desarrollada para visualización y anotación de imágenes médicas DICOM.")
+
