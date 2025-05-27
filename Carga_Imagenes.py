@@ -110,7 +110,6 @@ if img is not None:
             st.session_state['needles'] = []
             resized = resize(original, (64,64,64), anti_aliasing=True)
 
-        # Generar automáticamente 10 agujas fijas con Z aleatorio
         if 'auto_generated' not in st.session_state:
             st.session_state['needles'] = []
             for _ in range(10):
@@ -126,7 +125,6 @@ if img is not None:
                 })
             st.session_state['auto_generated'] = True
 
-        # Controles de creación
         with st.expander('Nueva aguja'):
             mode = st.radio('Modo', ['Manual','Aleatoria'], horizontal=True)
             shape = st.radio('Forma', ['Recta','Curva'], horizontal=True)
@@ -154,7 +152,6 @@ if img is not None:
                         'curved': (shape == 'Curva')
                     })
 
-        # Tabla y vista de colores
         st.markdown('### Registro de agujas')
 
         df = pd.DataFrame([{
@@ -165,25 +162,6 @@ if img is not None:
             'Forma': 'Curva' if d['curved'] else 'Recta',
             'Eliminar': False
         } for i, d in enumerate(st.session_state['needles']) for p, q in [d['points']]])
-
-        # Vista previa visual de colores
-        st.markdown("#### Vista previa de colores:")
-        color_preview_md = """
-        <table>
-        <tr><th>ID</th><th>Color (hex)</th><th>Vista</th></tr>
-        """
-        for i, row in df.iterrows():
-            color = row['Color']
-            color_box = f'<div style="width: 20px; height: 20px; background-color: {color}; border: 1px solid black; border-radius: 4px;"></div>'
-            color_preview_md += f"""
-            <tr>
-                <td style="text-align: center;">{row['ID']}</td>
-                <td style="text-align: center;">{color}</td>
-                <td style="text-align: center;">{color_box}</td>
-            </tr>
-            """
-        color_preview_md += "</table>"
-        st.markdown(color_preview_md, unsafe_allow_html=True)
 
         edited = st.data_editor(df, use_container_width=True)
 
@@ -197,7 +175,6 @@ if img is not None:
                     'curved': (r['Forma'] == 'Curva')
                 })
 
-        # Render 3D
         xg, yg, zg = np.mgrid[0:64,0:64,0:64]
         fig3d = go.Figure(data=[go.Volume(
             x=xg.flatten(), y=yg.flatten(), z=zg.flatten(),
