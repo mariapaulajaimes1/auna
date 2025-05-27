@@ -161,21 +161,45 @@ if img is not None:
                     })
 
         # Tabla editable
-        st.markdown('### Registro de agujas')
-        df = pd.DataFrame([{
-            'ID':i+1,
-            'X1':round(p[0],1),'Y1':round(p[1],1),'Z1':round(p[2],1),
-            'X2':round(q[0],1),'Y2':round(q[1],1),'Z2':round(q[2],1),
-            'Color':d['color'],'Forma':('Curva' if d['curved'] else 'Recta'),'Eliminar':False
-        } for i,d in enumerate(st.session_state['needles']) for p,q in [d['points']]])
-        edited = st.data_editor(df, use_container_width=True)
+               # Tabla editable con visualización de color
+        def color_square(hex_color):
+            return f'<div style="width:20px; height:20px; background-color:{hex_color}; border:1px solid #000; border-radius:4px;"></div>'
 
-        # Actualizar estado
+        st.markdown('### Registro de agujas')
+
+        # Crear DataFrame con columna visual adicional
+        df = pd.DataFrame([{
+            'ID': i+1,
+            'X1': round(p[0],1), 'Y1': round(p[1],1), 'Z1': round(p[2],1),
+            'X2': round(q[0],1), 'Y2': round(q[1],1), 'Z2': round(q[2],1),
+            'Color': d['color'],
+            'Forma': 'Curva' if d['curved'] else 'Recta',
+            'Eliminar': False,
+            'Color Preview': color_square(d['color'])
+        } for i, d in enumerate(st.session_state['needles']) for p, q in [d['points']]])
+
+        # Mostrar color como cuadrados visuales aparte (no editables)
+        with st.expander("Vista previa de colores por aguja"):
+            for i, row in df.iterrows():
+                st.markdown(
+                    f"<b>Aguja {row['ID']}:</b> {color_square(row['Color'])}",
+                    unsafe_allow_html=True
+                )
+
+        # Editor sin la columna visual (editable)
+        editable_df = df.drop(columns=['Color Preview'])
+        edited = st.data_editor(editable_df, use_container_width=True)
+
+        # Actualizar agujas
         st.session_state['needles'] = []
         for _, r in edited.iterrows():
             if not r['Eliminar']:
                 pts = ((r['X1'],r['Y1'],r['Z1']), (r['X2'],r['Y2'],r['Z2']))
-                st.session_state['needles'].append({'points': pts, 'color': r['Color'], 'curved': (r['Forma']=='Curva')})
+                st.session_state['needles'].append({
+                    'points': pts,
+                    'color': r['Color'],
+                    'curved': (r['Forma'] == 'Curva')
+                })
 
         # Render 3D
         xg, yg, zg = np.mgrid[0:64,0:64,0:64]
@@ -198,6 +222,7 @@ if img is not None:
             ))
 
         st.plotly_chart(fig3d, use_container_width=True)
+
 
 # Pie de página
 st.markdown('<p class="giant-title">BrachyCervix</p>', unsafe_allow_html=True)
