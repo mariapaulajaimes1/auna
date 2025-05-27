@@ -178,13 +178,32 @@ if img is not None:
             'Color Preview': color_square(d['color'])
         } for i, d in enumerate(st.session_state['needles']) for p, q in [d['points']]])
 
-        # Mostrar color como cuadrados visuales aparte (no editables)
-        with st.expander("Vista previa de colores por aguja"):
-            for i, row in df.iterrows():
-                st.markdown(
-                    f"<b>Aguja {row['ID']}:</b> {color_square(row['Color'])}",
-                    unsafe_allow_html=True
-                )
+        # Vista previa de colores con cuadrados visibles
+st.markdown("### Registro de agujas")
+
+        # Crear la tabla Markdown con cuadrados de color
+        color_preview_md = """
+        <table>
+        <tr>
+        <th>ID</th><th>Color</th><th>Vista</th>
+        </tr>
+        """
+
+        for i, d in enumerate(st.session_state['needles']):
+             color = d['color']
+             color_box = f'<div style="width: 20px; height: 20px; background-color: {color}; border: 1px solid black; border-radius: 4px;"></div>'
+             color_preview_md += f"""
+        <tr>
+            <td style="text-align: center;">{i+1}</td>
+            <td style="text-align: center;">{color}</td>
+            <td style="text-align: center;">{color_box}</td>
+        </tr>
+        """
+
+            color_preview_md += "</table>"
+
+            st.markdown(color_preview_md, unsafe_allow_html=True)
+
 
         # Editor sin la columna visual (editable)
         editable_df = df.drop(columns=['Color Preview'])
