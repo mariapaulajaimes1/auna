@@ -79,10 +79,15 @@ if img is not None:
     mn, mx = float(img.min()), float(img.max())
     default = {'ww': mx-mn, 'wc': mn + (mx-mn)/2}
 
-    # Valores fijos para mostrar vistas centrales
-    idx_ax = n_ax // 2
-    idx_cor = n_cor // 2
-    idx_sag = n_sag // 2
+    sync = st.sidebar.checkbox('Sincronizar cortes', True)
+    if sync:
+        orientation = st.sidebar.radio('Corte', ['Axial','Coronal','Sagital'])
+        limits = {'Axial':n_ax,'Coronal':n_cor,'Sagital':n_sag}
+        idx = st.sidebar.slider('Índice', 0, limits[orientation]-1, limits[orientation]//2)
+    else:
+        orientation = st.sidebar.selectbox('Corte', ['Axial','Coronal','Sagital'])
+        idx = st.sidebar.slider('Índice', 0, img.shape[['Axial','Coronal','Sagital'].index(orientation)]-1,
+                                 img.shape[['Axial','Coronal','Sagital'].index(orientation)]//2)
 
     invert = st.sidebar.checkbox('Negativo', False)
     wtype = st.sidebar.selectbox('Tipo ventana', ['Default','Abdomen','Hueso','Pulmón'])
@@ -90,9 +95,9 @@ if img is not None:
     ww, wc = presets.get(wtype, (default['ww'], default['wc']))
 
     slices = {
-        'Axial': img[idx_ax,:,:],
-        'Coronal': img[:,idx_cor,:],
-        'Sagital': img[:,:,idx_sag]
+        'Axial': img[idx,:,:],
+        'Coronal': img[:,idx,:],
+        'Sagital': img[:,:,idx]
     }
 
     cols = st.columns(3)
@@ -110,6 +115,7 @@ if img is not None:
             st.session_state['needles'] = []
             resized = resize(original, (64,64,64), anti_aliasing=True)
 
+        # Generar automáticamente 10 agujas fijas con Z aleatorio
         if 'auto_generated' not in st.session_state:
             st.session_state['needles'] = []
             for _ in range(10):
@@ -125,6 +131,7 @@ if img is not None:
                 })
             st.session_state['auto_generated'] = True
 
+        # Controles de creación con cantidad múltiple
         with st.expander('Nueva aguja'):
             mode = st.radio('Modo', ['Manual','Aleatoria'], horizontal=True)
             shape = st.radio('Forma', ['Recta','Curva'], horizontal=True)
@@ -140,6 +147,7 @@ if img is not None:
                     y2 = st.number_input('Y2', 0.0, 64.0, 32.0)
                     z2 = st.number_input('Z2', 0.0, 64.0, 32.0)
             if st.button('Agregar aguja'):
+                # Generar una o varias según modo
                 times = count if mode == 'Aleatoria' else 1
                 for _ in range(times):
                     if mode == 'Aleatoria':
@@ -152,29 +160,24 @@ if img is not None:
                         'curved': (shape == 'Curva')
                     })
 
+        # Tabla editable
         st.markdown('### Registro de agujas')
-
         df = pd.DataFrame([{
-            'ID': i+1,
-            'X1': round(p[0],1), 'Y1': round(p[1],1), 'Z1': round(p[2],1),
-            'X2': round(q[0],1), 'Y2': round(q[1],1), 'Z2': round(q[2],1),
-            'Color': d['color'],
-            'Forma': 'Curva' if d['curved'] else 'Recta',
-            'Eliminar': False
-        } for i, d in enumerate(st.session_state['needles']) for p, q in [d['points']]])
-
+            'ID':i+1,
+            'X1':round(p[0],1),'Y1':round(p[1],1),'Z1':round(p[2],1),
+            'X2':round(q[0],1),'Y2':round(q[1],1),'Z2':round(q[2],1),
+            'Color':d['color'],'Forma':('Curva' if d['curved'] else 'Recta'),'Eliminar':False
+        } for i,d in enumerate(st.session_state['needles']) for p,q in [d['points']]])
         edited = st.data_editor(df, use_container_width=True)
 
+        # Actualizar estado
         st.session_state['needles'] = []
         for _, r in edited.iterrows():
             if not r['Eliminar']:
                 pts = ((r['X1'],r['Y1'],r['Z1']), (r['X2'],r['Y2'],r['Z2']))
-                st.session_state['needles'].append({
-                    'points': pts,
-                    'color': r['Color'],
-                    'curved': (r['Forma'] == 'Curva')
-                })
+                st.session_state['needles'].append({'points': pts, 'color': r['Color'], 'curved': (r['Forma']=='Curva')})
 
+        # Render 3D
         xg, yg, zg = np.mgrid[0:64,0:64,0:64]
         fig3d = go.Figure(data=[go.Volume(
             x=xg.flatten(), y=yg.flatten(), z=zg.flatten(),
@@ -184,8 +187,7 @@ if img is not None:
             (x1,y1,z1),(x2,y2,z2) = d['points']
             if d['curved']:
                 t = np.linspace(0,1,50)
-                xs = x1*(1-t)+x2*t
-                ys = y1*(1-t)+y2*t
+                xs = x1*(1-t)+x2*t; ys = y1*(1-t)+y2*t
                 zs = z1*(1-t)+z2*t + 5*np.sin(np.pi*t)
             else:
                 xs, ys, zs = [x1,x2], [y1,y2], [z1,z2]
