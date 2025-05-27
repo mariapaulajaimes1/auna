@@ -203,7 +203,7 @@ if img is not None:
 st.markdown('<p class="giant-title">BrachyCervix</p>', unsafe_allow_html=True)
 st.markdown("""
 <div style="text-align:center;">
-    <img src="https://raw.githubusercontent.com/mariapaulajaimes1/auna/main/logo_footer1.png" alt="Logo" style="height:100px;margin-bottom:20px;">
+    <img src="https://raw.githubusercontent.com/mariapaulajaimes1/auna/main/logo_footer2.png" alt="Logo" style="height:300px;margin-bottom:20px;">
 </div>
 <hr>
 <div style="text-align:center;color:#28aec5;font-size:50px;">
