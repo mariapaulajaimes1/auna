@@ -88,6 +88,7 @@ if img is not None:
         orientation = st.sidebar.selectbox('Corte', ['Axial','Coronal','Sagital'])
         idx = st.sidebar.slider('Índice', 0, img.shape[['Axial','Coronal','Sagital'].index(orientation)]-1,
                                  img.shape[['Axial','Coronal','Sagital'].index(orientation)]//2)
+
     invert = st.sidebar.checkbox('Negativo', False)
     wtype = st.sidebar.selectbox('Tipo ventana', ['Default','Abdomen','Hueso','Pulmón'])
     presets = {'Abdomen':(400,40),'Hueso':(2000,500),'Pulmón':(1500,-600)}
@@ -98,6 +99,7 @@ if img is not None:
         'Coronal': img[:,idx,:],
         'Sagital': img[:,:,idx]
     }
+
     cols = st.columns(3)
     for col,(name,data) in zip(cols, slices.items()):
         with col:
@@ -109,9 +111,25 @@ if img is not None:
 
     # 3D y agujas
     if st.sidebar.checkbox('Mostrar 3D', True):
-        resized = resize(original, (64,64,64), anti_aliasing=True)
         if 'needles' not in st.session_state:
             st.session_state['needles'] = []
+            resized = resize(original, (64,64,64), anti_aliasing=True)
+
+        # Generar automáticamente 10 agujas fijas con Z aleatorio
+        if 'auto_generated' not in st.session_state:
+            st.session_state['needles'] = []
+            for _ in range(10):
+                z = random.uniform(29, 36)
+                y = random.uniform(30, 36)
+                p1 = (32.0, y, z)
+                p2 = (39.0, y, z)
+                color = f"#{random.randint(0, 0xFFFFFF):06x}"
+                st.session_state['needles'].append({
+                    'points': (p1, p2),
+                    'color': color,
+                    'curved': False
+                })
+            st.session_state['auto_generated'] = True
 
         # Controles de creación con cantidad múltiple
         with st.expander('Nueva aguja'):
@@ -144,13 +162,14 @@ if img is not None:
 
         # Tabla editable
         st.markdown('### Registro de agujas')
-        df = pd.DataFrame([{**{'ID':i+1,
-                                'X1':round(p[0],1),'Y1':round(p[1],1),'Z1':round(p[2],1),
-                                'X2':round(q[0],1),'Y2':round(q[1],1),'Z2':round(q[2],1),
-                                'Color':d['color'],'Forma':('Curva' if d['curved'] else 'Recta'),'Eliminar':False}}
-                             for i,d in enumerate(st.session_state['needles'])
-                             for p,q in [d['points']]])
+        df = pd.DataFrame([{
+            'ID':i+1,
+            'X1':round(p[0],1),'Y1':round(p[1],1),'Z1':round(p[2],1),
+            'X2':round(q[0],1),'Y2':round(q[1],1),'Z2':round(q[2],1),
+            'Color':d['color'],'Forma':('Curva' if d['curved'] else 'Recta'),'Eliminar':False
+        } for i,d in enumerate(st.session_state['needles']) for p,q in [d['points']]])
         edited = st.data_editor(df, use_container_width=True)
+
         # Actualizar estado
         st.session_state['needles'] = []
         for _, r in edited.iterrows():
@@ -167,18 +186,17 @@ if img is not None:
         for d in st.session_state['needles']:
             (x1,y1,z1),(x2,y2,z2) = d['points']
             if d['curved']:
-                t = np.linspace(0,1,50);
-                xs = x1*(1-t)+x2*t; ys = y1*(1-t)+y2*t;
+                t = np.linspace(0,1,50)
+                xs = x1*(1-t)+x2*t; ys = y1*(1-t)+y2*t
                 zs = z1*(1-t)+z2*t + 5*np.sin(np.pi*t)
             else:
                 xs, ys, zs = [x1,x2], [y1,y2], [z1,z2]
             fig3d.add_trace(go.Scatter3d(
                 x=xs, y=ys, z=zs, mode='lines+markers',
                 marker=dict(size=4, color=d['color']),
-                line=dict(width=3, color=d['color'])
+                line=dict(color=d['color'], width=4)
             ))
-        fig3d.update_layout(margin=dict(l=0,r=0,b=0,t=0))
-        st.subheader('Vista 3D')
+
         st.plotly_chart(fig3d, use_container_width=True)
 
 # Pie de página
