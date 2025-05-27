@@ -160,87 +160,78 @@ if img is not None:
                         'curved': (shape == 'Curva')
                     })
 
-        # Tabla editable
-               # Tabla editable con visualización de color
-        def color_square(hex_color):
-            return f'<div style="width:20px; height:20px; background-color:{hex_color}; border:1px solid #000; border-radius:4px;"></div>'
+        # Tabla editable con vista previa de color
+st.markdown('### Registro de agujas')
 
-        st.markdown('### Registro de agujas')
+# Crear DataFrame base
+df = pd.DataFrame([{
+    'ID': i+1,
+    'X1': round(p[0],1), 'Y1': round(p[1],1), 'Z1': round(p[2],1),
+    'X2': round(q[0],1), 'Y2': round(q[1],1), 'Z2': round(q[2],1),
+    'Color': d['color'],
+    'Forma': 'Curva' if d['curved'] else 'Recta',
+    'Eliminar': False
+} for i, d in enumerate(st.session_state['needles']) for p, q in [d['points']]])
 
-        # Crear DataFrame con columna visual adicional
-        df = pd.DataFrame([{
-            'ID': i+1,
-            'X1': round(p[0],1), 'Y1': round(p[1],1), 'Z1': round(p[2],1),
-            'X2': round(q[0],1), 'Y2': round(q[1],1), 'Z2': round(q[2],1),
-            'Color': d['color'],
-            'Forma': 'Curva' if d['curved'] else 'Recta',
-            'Eliminar': False,
-            'Color Preview': color_square(d['color'])
-        } for i, d in enumerate(st.session_state['needles']) for p, q in [d['points']]])
+# Vista previa de colores como tabla HTML con cuadrados
+st.markdown("#### Vista previa de colores:")
 
-        # Vista previa de colores con cuadrados visibles
-st.markdown("### Registro de agujas")
+color_preview_md = """
+<table>
+<tr>
+<th>ID</th><th>Color (hex)</th><th>Vista</th>
+</tr>
+"""
+for i, row in df.iterrows():
+    color = row['Color']
+    color_box = f'<div style="width: 20px; height: 20px; background-color: {color}; border: 1px solid black; border-radius: 4px;"></div>'
+    color_preview_md += f"""
+    <tr>
+        <td style="text-align: center;">{row['ID']}</td>
+        <td style="text-align: center;">{color}</td>
+        <td style="text-align: center;">{color_box}</td>
+    </tr>
+    """
+color_preview_md += "</table>"
+st.markdown(color_preview_md, unsafe_allow_html=True)
 
-        # Crear la tabla Markdown con cuadrados de color
-        color_preview_md = """
-        <table>
-        <tr>
-        <th>ID</th><th>Color</th><th>Vista</th>
-        </tr>
-        """
+# Editor interactivo sin columna visual
+edited = st.data_editor(df, use_container_width=True)
 
-        for i, d in enumerate(st.session_state['needles']):
-             color = d['color']
-             color_box = f'<div style="width: 20px; height: 20px; background-color: {color}; border: 1px solid black; border-radius: 4px;"></div>'
-             color_preview_md += f"""
-        <tr>
-            <td style="text-align: center;">{i+1}</td>
-            <td style="text-align: center;">{color}</td>
-            <td style="text-align: center;">{color_box}</td>
-        </tr>
-        """
+# Actualizar agujas con los valores editados
+st.session_state['needles'] = []
+for _, r in edited.iterrows():
+    if not r['Eliminar']:
+        pts = ((r['X1'],r['Y1'],r['Z1']), (r['X2'],r['Y2'],r['Z2']))
+        st.session_state['needles'].append({
+            'points': pts,
+            'color': r['Color'],
+            'curved': (r['Forma'] == 'Curva')
+        })
 
-            color_preview_md += "</table>"
+# Renderizado 3D
+xg, yg, zg = np.mgrid[0:64,0:64,0:64]
+fig3d = go.Figure(data=[go.Volume(
+    x=xg.flatten(), y=yg.flatten(), z=zg.flatten(),
+    value=resized.flatten(), opacity=0.1, surface_count=15, colorscale='Gray'
+)])
+for d in st.session_state['needles']:
+    (x1, y1, z1), (x2, y2, z2) = d['points']
+    if d['curved']:
+        t = np.linspace(0, 1, 50)
+        xs = x1*(1-t) + x2*t
+        ys = y1*(1-t) + y2*t
+        zs = z1*(1-t) + z2*t + 5*np.sin(np.pi * t)
+    else:
+        xs, ys, zs = [x1, x2], [y1, y2], [z1, z2]
+    fig3d.add_trace(go.Scatter3d(
+        x=xs, y=ys, z=zs, mode='lines+markers',
+        marker=dict(size=4, color=d['color']),
+        line=dict(color=d['color'], width=4)
+    ))
 
-            st.markdown(color_preview_md, unsafe_allow_html=True)
+st.plotly_chart(fig3d, use_container_width=True)
 
-
-        # Editor sin la columna visual (editable)
-        editable_df = df.drop(columns=['Color Preview'])
-        edited = st.data_editor(editable_df, use_container_width=True)
-
-        # Actualizar agujas
-        st.session_state['needles'] = []
-        for _, r in edited.iterrows():
-            if not r['Eliminar']:
-                pts = ((r['X1'],r['Y1'],r['Z1']), (r['X2'],r['Y2'],r['Z2']))
-                st.session_state['needles'].append({
-                    'points': pts,
-                    'color': r['Color'],
-                    'curved': (r['Forma'] == 'Curva')
-                })
-
-        # Render 3D
-        xg, yg, zg = np.mgrid[0:64,0:64,0:64]
-        fig3d = go.Figure(data=[go.Volume(
-            x=xg.flatten(), y=yg.flatten(), z=zg.flatten(),
-            value=resized.flatten(), opacity=0.1, surface_count=15, colorscale='Gray'
-        )])
-        for d in st.session_state['needles']:
-            (x1,y1,z1),(x2,y2,z2) = d['points']
-            if d['curved']:
-                t = np.linspace(0,1,50)
-                xs = x1*(1-t)+x2*t; ys = y1*(1-t)+y2*t
-                zs = z1*(1-t)+z2*t + 5*np.sin(np.pi*t)
-            else:
-                xs, ys, zs = [x1,x2], [y1,y2], [z1,z2]
-            fig3d.add_trace(go.Scatter3d(
-                x=xs, y=ys, z=zs, mode='lines+markers',
-                marker=dict(size=4, color=d['color']),
-                line=dict(color=d['color'], width=4)
-            ))
-
-        st.plotly_chart(fig3d, use_container_width=True)
 
 
 # Pie de página
