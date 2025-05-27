@@ -79,9 +79,15 @@ if img is not None:
     mn, mx = float(img.min()), float(img.max())
     default = {'ww': mx-mn, 'wc': mn + (mx-mn)/2}
 
-    idx_ax = n_ax // 2
-    idx_cor = n_cor // 2
-    idx_sag = n_sag // 2
+    sync = st.sidebar.checkbox('Sincronizar cortes', True)
+    if sync:
+        orientation = st.sidebar.radio('Corte', ['Axial','Coronal','Sagital'])
+        limits = {'Axial':n_ax,'Coronal':n_cor,'Sagital':n_sag}
+        idx = st.sidebar.slider('Índice', 0, limits[orientation]-1, limits[orientation]//2)
+    else:
+        orientation = st.sidebar.selectbox('Corte', ['Axial','Coronal','Sagital'])
+        idx = st.sidebar.slider('Índice', 0, img.shape[['Axial','Coronal','Sagital'].index(orientation)]-1,
+                                 img.shape[['Axial','Coronal','Sagital'].index(orientation)]//2)
 
     invert = st.sidebar.checkbox('Negativo', False)
     wtype = st.sidebar.selectbox('Tipo ventana', ['Default','Abdomen','Hueso','Pulmón'])
@@ -89,9 +95,9 @@ if img is not None:
     ww, wc = presets.get(wtype, (default['ww'], default['wc']))
 
     slices = {
-        'Axial': img[idx_ax,:,:],
-        'Coronal': img[:,idx_cor,:],
-        'Sagital': img[:,:,idx_sag]
+        'Axial': img[idx,:,:],
+        'Coronal': img[:,idx,:],
+        'Sagital': img[:,:,idx]
     }
 
     cols = st.columns(3)
